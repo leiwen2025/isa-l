@@ -40,14 +40,13 @@ DEFINE_INTERFACE_DISPATCHER(isal_adler32)
 #if HAVE_RVV
         const unsigned long hwcap = getauxval(AT_HWCAP);
         if (hwcap & HWCAP_RV('V')) {
-            unsigned long vlenb;
-            __asm__ volatile ("csrr %0, vlenb" : "=r"(vlenb));
-            if (vlenb == 16)
-                return adler32_rvv128;
-            else
-                return adler32_rvv;
-        }
-        else
+                unsigned long vlenb;
+                __asm__ volatile("csrr %0, vlenb" : "=r"(vlenb));
+                if (vlenb == 16)
+                        return adler32_rvv128;
+                else
+                        return adler32_rvv;
+        } else
 #endif
                 return adler32_base;
 }
