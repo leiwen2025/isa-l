@@ -33,24 +33,17 @@
 .globl          adler32_rvv128
 .type           adler32_rvv128, @function
 adler32_rvv128:
-    addi    sp, sp, -32
-    sd      ra, 24(sp)
-    sd      s1, 16(sp)
-    sd      s2, 8(sp)
-    sd      s3, 0(sp)
-
     li      t3, 0x80078071          // Barrett reduction magic constant
     li      t4, 65521
-    slli    s1, a0, 48
-    srli    s1, s1, 48              // s1: A = adler32 & 0xffff
-    srliw   s2, a0, 16              // s2: B = adler32 >> 16
-    add     s3, a1, a2              // s3 = end
+    slli    t5, a0, 48
+    srli    t5, t5, 48              // t5: A = adler32 & 0xffff
+    srliw   t6, a0, 16              // t6: B = adler32 >> 16
     li      t0, 32
     bltu    a2, t0, tail_bytes
 
     vsetvli zero, t0, e8, m2, ta, ma
-    la      t6, factors
-    vle8.v  v0, (t6)
+    la      a7, factors
+    vle8.v  v0, (a7)
     vmv.v.i v4, 0
     vmv.v.i v8, 0
     srli    t1, a2, 5               // t1 = length / 32
@@ -61,10 +54,10 @@ outer_loop:
     bgeu    t1, t2, 1f
     mv      t2, t1
 1:
-    mv      a3, s1
-    mv      a4, s2
-    slli    t6, t2, 5
-    add     t6, a1, t6
+    mv      a3, t5
+    mv      a4, t6
+    slli    a7, t2, 5
+    add     a7, a1, a7
 
 inner_loop:
     vle8.v  v2, (a1)
@@ -84,18 +77,18 @@ inner_loop:
     add     a4, a4, a6              // B += weighted_sum
 
     vsetvli zero, t0, e8, m2, ta, ma
-    bne     a1, t6, inner_loop
+    bne     a1, a7, inner_loop
 
-    mv      s1, a3
-    mv      s2, a4
-    mul     a5, s1, t3
+    mv      t5, a3
+    mv      t6, a4
+    mul     a5, t5, t3
     srli    a5, a5, 47
     mul     a6, a5, t4
-    sub     s1, s1, a6              // A %= 65521
-    mul     a5, s2, t3
+    sub     t5, t5, a6              // A %= 65521
+    mul     a5, t6, t3
     srli    a5, a5, 47
     mul     a6, a5, t4
-    sub     s2, s2, a6              // B %= 65521
+    sub     t6, t6, a6              // B %= 65521
     sub     t1, t1, t2
     j       outer_loop
 
@@ -107,28 +100,23 @@ tail_bytes:
 tail_loop:
     beq     a1, a2, finalize
     lbu     a3, 0(a1)
-    add     s1, s1, a3
-    add     s2, s2, s1
+    add     t5, t5, a3
+    add     t6, t6, t5
     addi    a1, a1, 1
     j       tail_loop
 
 finalize:
-    mul     a3, s1, t3
+    mul     a3, t5, t3
     srli    a3, a3, 47
     mul     a4, a3, t4
-    sub     s1, s1, a4
-    mul     a3, s2, t3
+    sub     t5, t5, a4
+    mul     a3, t6, t3
     srli    a3, a3, 47
     mul     a4, a3, t4
-    sub     s2, s2, a4
-    slli    s2, s2, 16
-    or      a0, s1, s2
+    sub     t6, t6, a4
+    slli    t6, t6, 16
+    or      a0, t5, t6
 
-    ld      ra, 24(sp)
-    ld      s1, 16(sp)
-    ld      s2, 8(sp)
-    ld      s3, 0(sp)
-    addi    sp, sp, 32
     ret
     .size adler32_rvv128, .-adler32_rvv128
 
