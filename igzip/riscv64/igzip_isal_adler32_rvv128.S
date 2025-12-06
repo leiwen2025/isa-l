@@ -45,7 +45,6 @@ adler32_rvv128:
     la      a7, factors
     vle8.v  v0, (a7)
     vmv.v.i v4, 0
-    vmv.v.i v8, 0
     srli    t1, a2, 5               // t1 = length / 32
 
 outer_loop:
@@ -54,33 +53,29 @@ outer_loop:
     bgeu    t1, t2, 1f
     mv      t2, t1
 1:
-    mv      a3, t5
-    mv      a4, t6
     slli    a7, t2, 5
     add     a7, a1, a7
 
 inner_loop:
     vle8.v  v2, (a1)
     addi    a1, a1, 32
-    slli    a5, a3, 5
-    add     a4, a4, a5
+    slli    a5, t5, 5
+    add     t6, t6, a5
     vwredsumu.vs v12, v2, v4
     vwmulu.vv v16, v2, v0
 
     vsetvli zero, t0, e16, m4, ta, ma
     vmv.x.s a6, v12
-    add     a3, a3, a6
-    vwredsumu.vs v20, v16, v8
+    add     t5, t5, a6
+    vwredsumu.vs v20, v16, v4
 
     vsetvli zero, t0, e32, m4, ta, ma
     vmv.x.s a6, v20
-    add     a4, a4, a6              // B += weighted_sum
+    add     t6, t6, a6              // B += weighted_sum
 
     vsetvli zero, t0, e8, m2, ta, ma
     bne     a1, a7, inner_loop
 
-    mv      t5, a3
-    mv      t6, a4
     mul     a5, t5, t3
     srli    a5, a5, 47
     mul     a6, a5, t4
